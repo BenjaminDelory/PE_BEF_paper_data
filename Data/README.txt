@@ -1,10 +1,10 @@
-This README.txt file was generated on 20190416 by Benjamin Delory
+﻿This README.txt file was generated on 20190731 by Benjamin Delory
 
 -------------------
 GENERAL INFORMATION
 -------------------
 
-1. Raw data used for the following paper: Delory et al (2019) When history matters: the overlooked role of priority effects on grassland overyielding.  
+1. Raw data used for the following paper: Delory et al (2019) When history matters: the overlooked role of priority effects in grassland overyielding.  
 
 2. Author Information
 
@@ -20,7 +20,7 @@ GENERAL INFORMATION
         Address: Universitaetsallee 1, 21335 Lueneburg, Germany
         Email: benjamin.delory@leuphana.de
 
-3. Date of data collection (harvest): June 2013 and July 2014 
+3. Date of data collection (harvest): June 2013 and June 2014 
 
 4. Geographic location of data collection: Juelich, Germany
 
@@ -47,7 +47,7 @@ DATA-SPECIFIC INFORMATION FOR: Data_PE_Julich_June2013.txt
        Unit: g
 
 -------------------------------------------------------------
-DATA-SPECIFIC INFORMATION FOR: Data_PE_Julich_July2014.txt
+DATA-SPECIFIC INFORMATION FOR: Data_PE_Julich_June2014.txt
 -------------------------------------------------------------
 
 1. Number of variables: 3

@@ -1,10 +1,10 @@
 ############################################################################################################################
-#R code used in Delory et al (2019) When history matters: the overlooked role of priority effects on grassland overyielding
+#R code used in Delory et al (2019) When history matters: the overlooked role of priority effects in grassland overyielding
 ############################################################################################################################
 
 #########################################################################
 #Set the path to the PE_BEF_paper_data directory
-#Example: "C:/Users/Benjamin Delory/Documents/GitHub/PE_BEF_paper_data"
+#Example: "C:/Users/Delory/Documents/GitHub/PE_BEF_paper_data"
 #########################################################################
 
 path<-"SET_WORKING_DIRECTORY_HERE"
@@ -28,6 +28,10 @@ library(bef)
 library(readr)
 library(beanplot)
 library(emmeans)
+library(smatr)
+library(ggplot2)
+library(ggpubr)
+library(vegan)
 
 #Create bootstrap function to calculate confidence intervals
 
@@ -124,10 +128,12 @@ rownames(mix1)<-unique(mix2013$Plot)
 for (i in 1:nrow(mix2013)){mix1[mix2013$Plot[i],mix2013$Art[i]]<-mix2013$x[i]}
 mix1[is.na(mix1)==TRUE]<-0
 mix1<-mix1[c(1:4,9:12,17:20,25:28),]
+mix1.2013<-mix1
 
 mono1<-matrix(mono2013$SDW, ncol=9, nrow=4, byrow=FALSE)
 colnames(mono1)<-unique(mono2013$Art)
 rownames(mono1)<-c("Mono1", "Mono2", "Mono3", "Mono4")
+mono1.2013<-mono1
 
 #Additive partitioning
 res2013<-apm(mix=mix1, mono=mono1, method="fox")
@@ -139,7 +145,7 @@ res2013$Plot<-rownames(res2013)
 res2013$SE<-res2013$TDCE+res2013$DE
 
 #Prepare data 2014
-data2014 <- read_delim("Data/Data_PE_Julich_July2014.txt",
+data2014 <- read_delim("Data/Data_PE_Julich_June2014.txt",
 "\t", escape_double = FALSE, trim_ws = TRUE)
 View(data2014)
 data2014<-as.data.frame(data2014)
@@ -158,10 +164,12 @@ rownames(mix1)<-unique(mix2014$Plot)
 for (i in 1:nrow(mix2014)){mix1[mix2014$Plot[i],mix2014$Art[i]]<-mix2014$x[i]}
 mix1[is.na(mix1)==TRUE]<-0
 mix1<-mix1[c(1:4,9:12,17:20,25:28),]
+mix1.2014<-mix1
 
 mono1<-matrix(mono2014$SDW, ncol=9, nrow=4, byrow=FALSE)
 colnames(mono1)<-unique(mono2014$Art)
 rownames(mono1)<-c("Mono1", "Mono2", "Mono3", "Mono4")
+mono1.2014<-mono1
 
 #Additive partitioning 2014
 res2014<-apm(mix=mix1, mono=mono1, method="fox")
@@ -240,7 +248,7 @@ posthoc<-emmeans(model, "Arrival", by="Year", contr="tukey", type="response") #A
 summary(posthoc, adjust="tukey") #Get groups
 
 ###############
-#Plot figure 1
+#Plot figure 2
 ###############
 
 res<-as.data.frame(res)
@@ -252,7 +260,7 @@ res$x<-c(rep(x[2],4), rep(x[3],4), rep(x[1],4), rep(x[4],4),
          rep(x[5],4), rep(x[6],4), rep(x[7],4), rep(x[8],4))-0.15
 x<-x+0.15
 
-tiff(filename="Figure1.tif", res=600, height=15, width=16, units="cm", compression="lzw", pointsize=8)
+tiff(filename="Figure2.tif", res=600, height=15, width=16, units="cm", compression="lzw", pointsize=8)
 
 #NBE
 par(bty="l", mar=c(2,4.5,4,2)+0,1, fig=c(0,0.5,0.5,1))
@@ -383,7 +391,7 @@ text(11, 500, expression(paste(italic(P[Interaction]), " = 0.070")), pos=2, cex=
 dev.off()
 
 #############################
-#Plot supplementary figure 1
+#Plot supplementary figure 2
 #############################
 
 mono2013<-data2013[data2013$Plot=="Mono",]
@@ -423,7 +431,7 @@ CI$Mono<-mono2013$x[match(CI$Art, mono2013$Art)]
 CI$H0<-CI$Mono/9
 testH0(CI)
 
-tiff(filename="FigureS1.tif", res=600, compression="lzw", width=15, height=13, units="cm", 
+tiff(filename="FigureS2.tif", res=600, compression="lzw", width=15, height=13, units="cm", 
      pointsize=7)
 
 par(mar=c(2.5,4.5,4,1)+0.1, fig=c(0,0.5,0.5,1))
@@ -514,7 +522,7 @@ text(120,770, "d", cex=1.4, font=2, pos=4)
 dev.off()
 
 #############################
-#Plot supplementary figure 2
+#Plot supplementary figure 3
 #############################
 
 mono2014<-data2014[data2014$Plot=="Mono",]
@@ -554,7 +562,7 @@ CI$Mono<-mono2014$x[match(CI$Art, mono2014$Art)]
 CI$H0<-CI$Mono/9
 testH0(CI)
 
-tiff(filename="FigureS2.tif", res=600, compression="lzw", width=15, height=13, units="cm", 
+tiff(filename="FigureS3.tif", res=600, compression="lzw", width=15, height=13, units="cm", 
      pointsize=7)
 
 par(mar=c(2.5,4.5,4,1)+0.1, fig=c(0,0.5,0.5,1))
@@ -660,6 +668,8 @@ for (i in 1:nrow(mix2013)){mix1[mix2013$Plot[i],mix2013$Art[i]]<-mix2013$x[i]}
 mix1[is.na(mix1)==TRUE]<-0
 mix1<-mix1[c(1:4,9:12,17:20,25:28),]
 
+simpson<-diversity(x=mix1, index="simpson")
+
 mono2013<-data2013[data2013$Plot=="Mono",]
 mono1<-matrix(mono2013$SDW, ncol=9, nrow=4, byrow=FALSE)
 colnames(mono1)<-unique(mono2013$Art)
@@ -682,6 +692,7 @@ mix1$Replicate<-rep(1:4, 4)
 pal<-c("white", "white", "white")
 L<-res2013
 L$Replicate<-rep(1:4, 4)
+L$Simpson<-simpson
 L$P<-NA
 L$CIlow<-NA
 L$CIhigh<-NA
@@ -725,61 +736,8 @@ for (i in 1:nrow(L)){
     L$CIhigh[i]<-CI[2]}}
 
 L<-L[-which(is.na(L$P)==TRUE),]
+L2013<-L
 P2013<-L$P
-
-tiff(filename="Figure3.tif", res=600, compression="lzw", width=13, height=18, units="cm",
-     pointsize=12)
-layout(matrix(1:6, ncol=2, nrow=3, byrow=FALSE), widths=c(1,1))
-
-par(mar=c(3,4.5,4,1)+0.1)
-plot(L$P,L$NBE, xlab="", ylab=expression(paste("Net biodiversity effect (g ", m^-2, ")")),las=1,
-     type="n", bty="l", ylim=c(0,600), main="2013", cex.main=1.6, xlim=c(-1,0.75))
-model<-lm(NBE~P, L)
-newx<-seq(min(L$P),max(L$P),by=0.01)
-prd<-predict(model, newdata=data.frame(P=newx),interval = c("confidence"), 
-             level = 0.95, type="response")
-polygon(x=c(newx, rev(newx)), y=c(prd[,2], rev(prd[,3])), 
-        col=adjustcolor(rgb(0,114,178, maxColorValue = 255), alpha.f = 0.2), border=NA)
-box(bty="l")
-abline(v=0, lty=3)
-segments(x0=L$CIlow, y0=L$NBE, x1=L$CIhigh, y1=L$NBE, col="gray50")
-points(L$P[L$Arrival=="F-first"], L$NBE[L$Arrival=="F-first"], pch=21, col="black", bg=pal[3], cex=1.2)
-points(L$P[L$Arrival=="G-first"], L$NBE[L$Arrival=="G-first"], pch=22, col="black", bg=pal[2], cex=1.2)
-points(L$P[L$Arrival=="L-first"], L$NBE[L$Arrival=="L-first"], pch=24, col="black", bg=pal[1], cex=1.2)
-lines(newx, predict(model, newdata=data.frame(P=newx)), col=rgb(0,114,178, maxColorValue = 255), lwd=2)
-title(main="a", font=2, cex.main=1.4, adj=0)
-cor.test(L$NBE,L$P)
-
-par(mar=c(4,4.5,3,1)+0.1)
-plot(L$P,L$CE, xlab="", ylab=expression(paste("Complementarity effect (g ", m^-2, ")")),las=1,
-     type="n", bty="l", ylim=c(-200,500), xlim=c(-1,0.75))
-model<-lm(CE~P, L)
-newx<-seq(min(L$P),max(L$P),by=0.01)
-prd<-predict(model, newdata=data.frame(P=newx),interval = c("confidence"), 
-             level = 0.95, type="response")
-polygon(x=c(newx, rev(newx)), y=c(prd[,2], rev(prd[,3])), 
-        col=adjustcolor(rgb(0,158,115, maxColorValue = 255), alpha.f = 0.2), border=NA)
-box(bty="l")
-abline(v=0, h=0, lty=3)
-segments(x0=L$CIlow, y0=L$CE, x1=L$CIhigh, y1=L$CE, col="gray50")
-points(L$P[L$Arrival=="F-first"], L$CE[L$Arrival=="F-first"], pch=21, col="black", bg=pal[3], cex=1.2)
-points(L$P[L$Arrival=="G-first"], L$CE[L$Arrival=="G-first"], pch=22, col="black", bg=pal[2], cex=1.2)
-points(L$P[L$Arrival=="L-first"], L$CE[L$Arrival=="L-first"], pch=24, col="black", bg=pal[1], cex=1.2)
-lines(newx, predict(model, newdata=data.frame(P=newx)), col=rgb(0,158,115, maxColorValue = 255), lwd=2)
-title(main="c", font=2, cex.main=1.4, adj=0, line=1.2)
-cor.test(L$CE,L$P)
-
-par(mar=c(5,4.5,2,1)+0.1)
-plot(L$P,L$DE, xlab=expression(paste("Priority effect index (", italic(P), ")", sep="")), ylab=expression(paste("Dominance effect (g ", m^-2, ")")),las=1,
-     type="n", bty="l", ylim=c(0,350), xlim=c(-1,0.75))
-abline(v=0, lty=3)
-segments(x0=L$CIlow, y0=L$DE, x1=L$CIhigh, y1=L$DE, col="gray50")
-points(L$P[L$Arrival=="F-first"], L$DE[L$Arrival=="F-first"], pch=21, col="black", bg=pal[3], cex=1.2)
-points(L$P[L$Arrival=="G-first"], L$DE[L$Arrival=="G-first"], pch=22, col="black", bg=pal[2], cex=1.2)
-points(L$P[L$Arrival=="L-first"], L$DE[L$Arrival=="L-first"], pch=24, col="black", bg=pal[1], cex=1.2)
-title(main="e", font=2, cex.main=1.4, adj=0, line=1.2)
-cor.test(L$DE,L$P)
-model<-lm(DE~P, L)
 
 #Calculate P for 2014
 
@@ -792,6 +750,8 @@ rownames(mix1)<-unique(mix2014$Plot)
 for (i in 1:nrow(mix2014)){mix1[mix2014$Plot[i],mix2014$Art[i]]<-mix2014$x[i]}
 mix1[is.na(mix1)==TRUE]<-0
 mix1<-mix1[c(1:4,9:12,17:20,25:28),]
+
+simpson<-diversity(x=mix1, index="simpson")
 
 mono2014<-data2014[data2014$Plot=="Mono",]
 mono1<-matrix(mono2014$SDW, ncol=9, nrow=4, byrow=FALSE)
@@ -815,6 +775,7 @@ mix1$Replicate<-rep(1:4, 4)
 pal<-c("white", "white", "white")
 L<-res2014
 L$Replicate<-rep(1:4, 4)
+L$Simpson<-simpson
 L$P<-NA
 L$CIlow<-NA
 L$CIhigh<-NA
@@ -858,300 +819,367 @@ for (i in 1:nrow(L)){
     L$CIhigh[i]<-CI[2]}}
 
 L<-L[-which(is.na(L$P)==TRUE),]
+L2014<-L
 P2014<-L$P
 
-par(mar=c(3,3.5,4,2)+0.1)
-plot(L$P,L$NBE, xlab="", ylab="",las=1,
-     type="n", bty="l", ylim=c(-100,300), main="2014", cex.main=1.6, xlim=c(-1,1.25))
-model<-lm(NBE~P, L)
-newx<-seq(min(L$P),max(L$P),by=0.01)
-prd<-predict(model, newdata=data.frame(P=newx),interval = c("confidence"), 
-             level = 0.95, type="response")
-polygon(x=c(newx, rev(newx)), y=c(prd[,2], rev(prd[,3])), 
-        col=adjustcolor(rgb(0,114,178, maxColorValue = 255), alpha.f = 0.2), border=NA)
-box(bty="l")
-abline(v=0, h=0, lty=3)
-segments(x0=L$CIlow, y0=L$NBE, x1=L$CIhigh, y1=L$NBE, col="gray50")
-points(L$P[L$Arrival=="F-first"], L$NBE[L$Arrival=="F-first"], pch=21, col="black", bg=pal[3], cex=1.2)
-points(L$P[L$Arrival=="G-first"], L$NBE[L$Arrival=="G-first"], pch=22, col="black", bg=pal[2], cex=1.2)
-points(L$P[L$Arrival=="L-first"], L$NBE[L$Arrival=="L-first"], pch=24, col="black", bg=pal[1], cex=1.2)
-lines(newx, predict(model, newdata=data.frame(P=newx)), col=rgb(0,114,178, maxColorValue = 255), lwd=2)
-title(main="b", font=2, cex.main=1.4, adj=0)
-legend("topleft", legend=c("F-first", "G-first", "L-first"), pch=c(21,22,24), 
-       pt.bg=c(pal[3], pal[2], pal[1]), col="black", cex=1, pt.cex=1.1, border=NA, bty="n")
-cor.test(L$NBE,L$P)
+table<-rbind(L2013, L2014)
+table$Year<-factor(table$Year)
 
-par(mar=c(4,3.5,3,2)+0.1)
-plot(L$P,L$CE, xlab="", ylab="",las=1,
-     type="n", bty="l", ylim=c(-150,300), xlim=c(-1,1.25))
-model<-lm(CE~P, L)
-newx<-seq(min(L$P),max(L$P),by=0.01)
-prd<-predict(model, newdata=data.frame(P=newx),interval = c("confidence"), 
-             level = 0.95, type="response")
-polygon(x=c(newx, rev(newx)), y=c(prd[,2], rev(prd[,3])), 
-        col=adjustcolor(rgb(0,158,115, maxColorValue = 255), alpha.f=0.2), border=NA)
-box(bty="l")
-abline(v=0, h=0, lty=3)
-segments(x0=L$CIlow, y0=L$CE, x1=L$CIhigh, y1=L$CE, col="gray50")
-points(L$P[L$Arrival=="F-first"], L$CE[L$Arrival=="F-first"], pch=21, col="black", bg=pal[3], cex=1.2)
-points(L$P[L$Arrival=="G-first"], L$CE[L$Arrival=="G-first"], pch=22, col="black", bg=pal[2], cex=1.2)
-points(L$P[L$Arrival=="L-first"], L$CE[L$Arrival=="L-first"], pch=24, col="black", bg=pal[1], cex=1.2)
-lines(newx, predict(model, newdata=data.frame(P=newx)), col=rgb(0,158,115, maxColorValue = 255), lwd=2)
-title(main="d", font=2, cex.main=1.4, adj=0, line=1.2)
-cor.test(L$CE,L$P)
+#Relationship between P and Simpson diversity index
+ggplot(table, aes(x=Simpson, y=P, color=Arrival))+
+  geom_point(size=3)+
+  facet_wrap(~Year)+
+  theme_bw()+
+  ylab(expression(paste("Priority effect index (", italic(P), ")", sep="")))+
+  xlab("Simpson diversity index")
 
-par(mar=c(5,3.5,2,2)+0.1)
-plot(L$P,L$DE, xlab=expression(paste("Priority effect index (", italic(P), ")", sep="")), ylab="",las=1,
-     type="n", bty="l", ylim=c(-100,150), xlim=c(-1,1.25))
-abline(v=0, h=0, lty=3)
-segments(x0=L$CIlow, y0=L$DE, x1=L$CIhigh, y1=L$DE, col="gray50")
-points(L$P[L$Arrival=="F-first"], L$DE[L$Arrival=="F-first"], pch=21, col="black", bg=pal[3], cex=1.2)
-points(L$P[L$Arrival=="G-first"], L$DE[L$Arrival=="G-first"], pch=22, col="black", bg=pal[2], cex=1.2)
-points(L$P[L$Arrival=="L-first"], L$DE[L$Arrival=="L-first"], pch=24, col="black", bg=pal[1], cex=1.2)
-title(main="f", font=2, cex.main=1.4, adj=0, line=1.2)
-cor.test(L$DE,L$P)
-model<-lm(DE~P, L)
+#Relationship between NBE and Simpson diversity index
+ggplot(table, aes(x=Simpson, y=NBE, color=Arrival))+
+  geom_point(size=3)+
+  facet_wrap(~Year)+
+  theme_bw()+
+  ylab(expression(paste("Net biodiversity effect (g ", m^-2, ")")))+
+  xlab("Simpson diversity index")
 
-dev.off()
+#Fit SMA models
+
+modelNBE<-sma(NBE~P*Year, data=table, log="")
+summary(modelNBE)
+modelCE<-sma(CE~P*Year, data=table, log="")
+summary(modelCE)
+modelTICE<-sma(TICE~P*Year, data=table, log="")
+summary(modelTICE)
+modelTDCE<-sma(TDCE~P*Year, data=table, log="")
+summary(modelTDCE)
+modelDE<-sma(DE~P*Year, data=table, log="")
+summary(modelDE)
+
+#Plot figure 3
+
+cbPalette <- c("#0072B2", "#F0E442", "#009E73")
+
+cex.axis=10
+cex.title=10
+
+model<-data.frame(
+  newx=seq(min(L2013$P),max(L2013$P),by=0.01),
+  prd=modelNBE$coef$`2013`$`coef(SMA)`[2]*seq(min(L2013$P),max(L2013$P),by=0.01)+modelNBE$coef$`2013`$`coef(SMA)`[1])
+
+p1<-ggplot(L2013, aes(x=P, y=NBE, fill=Arrival, shape=Arrival))+
+  geom_segment(aes(x=CIlow, y=NBE, xend=CIhigh, yend=NBE), color="gray50")+
+  geom_point(color="black", size=2)+
+  geom_line(aes(x=newx, y=prd), data=model, color="black", size=1, inherit.aes = FALSE)+
+  theme_bw()+
+  facet_wrap(~Year)+
+  scale_y_continuous(breaks=seq(0,600, by=100), limits=c(0,600))+
+  geom_vline(xintercept = 0, linetype=3, color="black")+
+  theme(legend.title=element_blank(),
+        legend.key.size=unit(0.8, units="lines"),
+        legend.position=c(0.85,0.2),
+        legend.background = element_rect(fill=NA),
+        panel.grid=element_blank(),
+        axis.text.x=element_text(size=cex.axis,color="black"),
+        axis.text.y=element_text(size=cex.axis,color="black"),
+        axis.title.y=element_text(size=cex.title, margin=margin(t=0,r=7,b=0,l=0)),
+        axis.title.x=element_text(size=cex.title, margin=margin(t=7,r=0,b=0,l=0)),
+        strip.text=element_text(size=12),
+        panel.border = element_rect(color="black"),
+        strip.background=element_rect(color="black"))+
+  scale_fill_manual(name="Arrival", labels=c("F-first", "G-first", "L-first"), 
+                     values=cbPalette)+
+  scale_shape_manual(name="Arrival", labels=c("F-first", "G-first", "L-first"), 
+                     values=c(21,22,24))+
+  xlab("")+
+  ylab(expression(paste("Net biodiversity effect (g ", m^-2, ")")))+
+  geom_text(aes(x=-1, y=600, label="a"), 
+            size=5, fontface="bold", inherit.aes = FALSE)
+
+model<-data.frame(
+  newx=seq(min(L2013$P),max(L2013$P),by=0.01),
+  prd=modelCE$coef$`2013`$`coef(SMA)`[2]*seq(min(L2013$P),max(L2013$P),by=0.01)+modelCE$coef$`2013`$`coef(SMA)`[1])
+
+p2<-ggplot(L2013, aes(x=P, y=CE, fill=Arrival, shape=Arrival))+
+  geom_segment(aes(x=CIlow, y=CE, xend=CIhigh, yend=CE), color="gray50")+
+  geom_point(color="black", size=2)+
+  geom_line(aes(x=newx, y=prd), data=model, color="black", size=1, inherit.aes = FALSE)+
+  theme_bw()+
+  scale_y_continuous(breaks=seq(-200,500, by=100), limits=c(-200,500))+
+  geom_vline(xintercept = 0, linetype=3, color="black")+
+  geom_hline(yintercept = 0, linetype=3, color="black")+
+  theme(legend.position="none",
+        panel.grid=element_blank(),
+        axis.text.x=element_text(size=cex.axis,color="black"),
+        axis.text.y=element_text(size=cex.axis,color="black"),
+        axis.title.y=element_text(size=cex.title, margin=margin(t=0,r=7,b=0,l=0)),
+        axis.title.x=element_text(size=cex.title, margin=margin(t=7,r=0,b=0,l=0)),
+        strip.text=element_text(size=13),
+        panel.border = element_rect(color="black"),
+        strip.background=element_rect(color="black"))+
+  scale_fill_manual(name="Arrival", labels=c("F-first", "G-first", "L-first"), 
+                    values=cbPalette)+
+  scale_shape_manual(name="Arrival", labels=c("F-first", "G-first", "L-first"), 
+                     values=c(21,22,24))+
+  xlab("")+
+  ylab(expression(paste("Complementarity effect (g ", m^-2, ")")))+
+  geom_text(aes(x=-1, y=500, label="c"), 
+            size=5, fontface="bold", inherit.aes = FALSE)
+
+p3<-ggplot(L2013, aes(x=P, y=DE, fill=Arrival, shape=Arrival))+
+  geom_segment(aes(x=CIlow, y=DE, xend=CIhigh, yend=DE), color="gray50")+
+  geom_point(color="black", size=2)+
+  theme_bw()+
+  scale_y_continuous(breaks=seq(0,300, by=50), limits=c(0,300))+
+  geom_vline(xintercept = 0, linetype=3, color="black")+
+  theme(legend.position="none",
+        panel.grid=element_blank(),
+        axis.text.x=element_text(size=cex.axis,color="black"),
+        axis.text.y=element_text(size=cex.axis,color="black"),
+        axis.title.y=element_text(size=cex.title, margin=margin(t=0,r=7,b=0,l=0)),
+        axis.title.x=element_text(size=cex.title, margin=margin(t=7,r=0,b=0,l=0)),
+        strip.text=element_text(size=13),
+        panel.border = element_rect(color="black"),
+        strip.background=element_rect(color="black"))+
+  scale_fill_manual(name="Arrival", labels=c("F-first", "G-first", "L-first"), 
+                    values=cbPalette)+
+  scale_shape_manual(name="Arrival", labels=c("F-first", "G-first", "L-first"), 
+                     values=c(21,22,24))+
+  xlab(expression(paste("Priority effect index (", italic(P), ")", sep="")))+
+  ylab(expression(paste("Dominance effect (g ", m^-2, ")")))+
+  geom_text(aes(x=0.72, y=300, label="e"), 
+            size=5, fontface="bold", inherit.aes = FALSE)
+
+model<-data.frame(
+  newx=seq(min(L2014$P),max(L2014$P),by=0.01),
+  prd=modelNBE$coef$`2014`$`coef(SMA)`[2]*seq(min(L2014$P),max(L2014$P),by=0.01)+modelNBE$coef$`2014`$`coef(SMA)`[1])
+
+p4<-ggplot(L2014, aes(x=P, y=NBE, fill=Arrival, shape=Arrival))+
+  geom_segment(aes(x=CIlow, y=NBE, xend=CIhigh, yend=NBE), color="gray50")+
+  geom_point(color="black", size=2)+
+  geom_line(aes(x=newx, y=prd), data=model, color="black", size=1, inherit.aes = FALSE)+
+  theme_bw()+
+  facet_wrap(~Year)+
+  scale_y_continuous(breaks=seq(-100,300, by=100), limits=c(-100,300))+
+  geom_vline(xintercept = 0, linetype=3, color="black")+
+  geom_hline(yintercept = 0, linetype=3, color="black")+
+  theme(legend.position="none",
+        panel.grid=element_blank(),
+        axis.text.x=element_text(size=cex.axis,color="black"),
+        axis.text.y=element_text(size=cex.axis,color="black"),
+        axis.title.y=element_text(size=cex.title, margin=margin(t=0,r=7,b=0,l=0)),
+        axis.title.x=element_text(size=cex.title, margin=margin(t=7,r=0,b=0,l=0)),
+        strip.text=element_text(size=12),
+        panel.border = element_rect(color="black"),
+        strip.background=element_rect(color="black"))+
+  scale_fill_manual(name="Arrival", labels=c("F-first", "G-first", "L-first"), 
+                    values=cbPalette)+
+  scale_shape_manual(name="Arrival", labels=c("F-first", "G-first", "L-first"), 
+                     values=c(21,22,24))+
+  xlab("")+
+  ylab("")+
+  geom_text(aes(x=-1, y=290, label="b"), 
+            size=5, fontface="bold", inherit.aes = FALSE)
+
+model<-data.frame(
+  newx=seq(min(L2014$P),max(L2014$P),by=0.01),
+  prd=modelCE$coef$`2014`$`coef(SMA)`[2]*seq(min(L2014$P),max(L2014$P),by=0.01)+modelCE$coef$`2014`$`coef(SMA)`[1])
+
+p5<-ggplot(L2014, aes(x=P, y=CE, fill=Arrival, shape=Arrival))+
+  geom_segment(aes(x=CIlow, y=CE, xend=CIhigh, yend=CE), color="gray50")+
+  geom_point(color="black", size=2)+
+  geom_line(aes(x=newx, y=prd), data=model, color="black", size=1, inherit.aes = FALSE)+
+  theme_bw()+
+  scale_y_continuous(breaks=seq(-100,300, by=100), limits=c(-100,300))+
+  geom_vline(xintercept = 0, linetype=3, color="black")+
+  geom_hline(yintercept = 0, linetype=3, color="black")+
+  theme(legend.position="none",
+        panel.grid=element_blank(),
+        axis.text.x=element_text(size=cex.axis,color="black"),
+        axis.text.y=element_text(size=cex.axis,color="black"),
+        axis.title.y=element_text(size=cex.title, margin=margin(t=0,r=7,b=0,l=0)),
+        axis.title.x=element_text(size=cex.title, margin=margin(t=7,r=0,b=0,l=0)),
+        strip.text=element_text(size=13),
+        panel.border = element_rect(color="black"),
+        strip.background=element_rect(color="black"))+
+  scale_fill_manual(name="Arrival", labels=c("F-first", "G-first", "L-first"), 
+                    values=cbPalette)+
+  scale_shape_manual(name="Arrival", labels=c("F-first", "G-first", "L-first"), 
+                     values=c(21,22,24))+
+  xlab("")+
+  ylab("")+
+  geom_text(aes(x=-1, y=290, label="d"), 
+            size=5, fontface="bold", inherit.aes = FALSE)
+
+p6<-ggplot(L2014, aes(x=P, y=DE, fill=Arrival, shape=Arrival))+
+  geom_segment(aes(x=CIlow, y=DE, xend=CIhigh, yend=DE), color="gray50")+
+  geom_point(color="black", size=2)+
+  theme_bw()+
+  scale_y_continuous(breaks=seq(-100,150, by=50), limits=c(-100,150))+
+  geom_vline(xintercept = 0, linetype=3, color="black")+
+  geom_hline(yintercept = 0, linetype=3, color="black")+
+  theme(legend.position="none",
+        panel.grid=element_blank(),
+        axis.text.x=element_text(size=cex.axis,color="black"),
+        axis.text.y=element_text(size=cex.axis,color="black"),
+        axis.title.y=element_text(size=cex.title, margin=margin(t=0,r=7,b=0,l=0)),
+        axis.title.x=element_text(size=cex.title, margin=margin(t=7,r=0,b=0,l=0)),
+        strip.text=element_text(size=13),
+        panel.border = element_rect(color="black"),
+        strip.background=element_rect(color="black"))+
+  scale_fill_manual(name="Arrival", labels=c("F-first", "G-first", "L-first"), 
+                    values=cbPalette)+
+  scale_shape_manual(name="Arrival", labels=c("F-first", "G-first", "L-first"), 
+                     values=c(21,22,24))+
+  xlab(expression(paste("Priority effect index (", italic(P), ")", sep="")))+
+  ylab("")+
+  geom_text(aes(x=-1, y=145, label="f"), 
+            size=5, fontface="bold", inherit.aes = FALSE)
+
+p7<-ggarrange(p1,p4,p2,p5,p3,p6, nrow=3, ncol=2, heights=c(1.1,1,1))
+
+ggsave("Figure3.tiff", plot=p7, dpi=600, compression="lzw", 
+       width=16, height=20, units="cm", pointsize=10)
+
+###########################
 
 plot(P2013, P2014, ylab="Priority effect index 2014", xlab="Priority effect index 2013",
      pch=c(rep(21,4), rep(22,4), rep(24,4)), las=1)
 abline(b=1, a=0)
 
 #############################
-#Plot supplementary figure 3
+#Plot supplementary figure 4
 #############################
 
-#Calculate P for 2013
+cbPalette <- c("#0072B2", "#F0E442", "#009E73")
 
-mix1<-matrix(ncol=9, nrow=32)
-colnames(mix1)<-unique(mix2013$Art)
-rownames(mix1)<-unique(mix2013$Plot)
+cex.axis=10
+cex.title=10
 
-for (i in 1:nrow(mix2013)){mix1[mix2013$Plot[i],mix2013$Art[i]]<-mix2013$x[i]}
-mix1[is.na(mix1)==TRUE]<-0
-mix1<-mix1[c(1:4,9:12,17:20,25:28),]
+model<-data.frame(
+  newx=seq(min(L2013$P),max(L2013$P),by=0.01),
+  prd=modelTICE$coef$`2013`$`coef(SMA)`[2]*seq(min(L2013$P),max(L2013$P),by=0.01)+modelTICE$coef$`2013`$`coef(SMA)`[1])
 
-mono1<-matrix(mono2013$SDW, ncol=9, nrow=4, byrow=FALSE)
-colnames(mono1)<-unique(mono2013$Art)
-rownames(mono1)<-c("Mono1", "Mono2", "Mono3", "Mono4")
+p1<-ggplot(L2013, aes(x=P, y=TICE, fill=Arrival, shape=Arrival))+
+  geom_segment(aes(x=CIlow, y=TICE, xend=CIhigh, yend=TICE), color="gray50")+
+  geom_point(color="black", size=2)+
+  geom_line(aes(x=newx, y=prd), data=model, color="black", size=1, inherit.aes = FALSE)+
+  theme_bw()+
+  facet_wrap(~Year)+
+  scale_y_continuous(breaks=seq(-200,400, by=100), limits=c(-200,400))+
+  geom_vline(xintercept = 0, linetype=3, color="black")+
+  geom_hline(yintercept = 0, linetype=3, color="black")+
+  theme(legend.title=element_blank(),
+        legend.key.size=unit(0.8, units="lines"),
+        legend.position=c(0.85,0.18),
+        legend.background = element_rect(fill=NA),
+        panel.grid=element_blank(),
+        axis.text.x=element_text(size=cex.axis,color="black"),
+        axis.text.y=element_text(size=cex.axis,color="black"),
+        axis.title.y=element_text(size=cex.title, margin=margin(t=0,r=7,b=0,l=0)),
+        axis.title.x=element_text(size=cex.title, margin=margin(t=7,r=0,b=0,l=0)),
+        strip.text=element_text(size=12),
+        panel.border = element_rect(color="black"),
+        strip.background=element_rect(color="black"))+
+  scale_fill_manual(name="Arrival", labels=c("F-first", "G-first", "L-first"), 
+                    values=cbPalette)+
+  scale_shape_manual(name="Arrival", labels=c("F-first", "G-first", "L-first"), 
+                     values=c(21,22,24))+
+  xlab("")+
+  ylab(expression(paste("TICE (g ", m^-2, ")")))+
+  geom_text(aes(x=-1, y=400, label="a"), 
+            size=5, fontface="bold", inherit.aes = FALSE)
 
-res2013<-apm(mix=mix1, mono=mono1, method="fox")
-res2013<-as.data.frame(res2013)
-res2013$Arrival<-c(rep("F-first", 4), rep("G-first", 4), rep("aSynch", 4), rep("L-first", 4))
-res2013$CE<-res2013$TDCE+res2013$TICE
-res2013$Year<-rep(2013, nrow(res2013))
-res2013$Plot<-rownames(res2013)
+model<-data.frame(
+  newx=seq(min(L2013$P),max(L2013$P),by=0.01),
+  prd=modelTDCE$coef$`2013`$`coef(SMA)`[2]*seq(min(L2013$P),max(L2013$P),by=0.01)+modelTDCE$coef$`2013`$`coef(SMA)`[1])
 
-mix1<-as.data.frame(mix1)
-mix1$Forbs<-mix1$Achmil+mix1$Leuvul+mix1$Plalan
-mix1$Grasses<-mix1$Dacglo+mix1$Fespra+mix1$Hollan
-mix1$Legumes<-mix1$Medsat+mix1$Lotcor+mix1$Tripra
-mix1$Arrival<-c(rep("F-first",4), rep("G-first",4), rep("Sync",4), rep("L-first",4))
-mix1$Replicate<-rep(1:4, 4)
+p2<-ggplot(L2013, aes(x=P, y=TDCE, fill=Arrival, shape=Arrival))+
+  geom_segment(aes(x=CIlow, y=TDCE, xend=CIhigh, yend=TDCE), color="gray50")+
+  geom_point(color="black", size=2)+
+  geom_line(aes(x=newx, y=prd), data=model, color="black", size=1, inherit.aes = FALSE)+
+  theme_bw()+
+  scale_y_continuous(breaks=seq(-100,150, by=50), limits=c(-100,150))+
+  geom_vline(xintercept = 0, linetype=3, color="black")+
+  geom_hline(yintercept = 0, linetype=3, color="black")+
+  theme(legend.position="none",
+        panel.grid=element_blank(),
+        axis.text.x=element_text(size=cex.axis,color="black"),
+        axis.text.y=element_text(size=cex.axis,color="black"),
+        axis.title.y=element_text(size=cex.title, margin=margin(t=0,r=7,b=0,l=0)),
+        axis.title.x=element_text(size=cex.title, margin=margin(t=7,r=0,b=0,l=0)),
+        strip.text=element_text(size=13),
+        panel.border = element_rect(color="black"),
+        strip.background=element_rect(color="black"))+
+  scale_fill_manual(name="Arrival", labels=c("F-first", "G-first", "L-first"), 
+                    values=cbPalette)+
+  scale_shape_manual(name="Arrival", labels=c("F-first", "G-first", "L-first"), 
+                     values=c(21,22,24))+
+  xlab(expression(paste("Priority effect index (", italic(P), ")", sep="")))+
+  ylab(expression(paste("TDCE (g ", m^-2, ")")))+
+  geom_text(aes(x=-1, y=150, label="c"), 
+            size=5, fontface="bold", inherit.aes = FALSE)
 
-pal<-c("white", "white", "white")
-L<-res2013
-L$Replicate<-rep(1:4, 4)
-L$P<-NA
-L$CIlow<-NA
-L$CIhigh<-NA
+model<-data.frame(
+  newx=seq(min(L2014$P),max(L2014$P),by=0.01),
+  prd=modelTICE$coef$`2014`$`coef(SMA)`[2]*seq(min(L2014$P),max(L2014$P),by=0.01)+modelTICE$coef$`2014`$`coef(SMA)`[1])
 
-for (i in 1:nrow(L)){
-  
-  plot<-rownames(L)[i]
-  
-  if (L$Arrival[i]=="F-first") {
-    Ylast<-mix1$Legumes[which(rownames(mix1)==plot)]+mix1$Grasses[which(rownames(mix1)==plot)]
-    Ysync1<-mix1$Legumes[mix1$Arrival=="Sync" & mix1$Replicate==1]+mix1$Grasses[mix1$Arrival=="Sync" & mix1$Replicate==1]
-    Ysync2<-mix1$Legumes[mix1$Arrival=="Sync" & mix1$Replicate==2]+mix1$Grasses[mix1$Arrival=="Sync" & mix1$Replicate==2]
-    Ysync3<-mix1$Legumes[mix1$Arrival=="Sync" & mix1$Replicate==3]+mix1$Grasses[mix1$Arrival=="Sync" & mix1$Replicate==3]
-    Ysync4<-mix1$Legumes[mix1$Arrival=="Sync" & mix1$Replicate==4]+mix1$Grasses[mix1$Arrival=="Sync" & mix1$Replicate==4]}
-  
-  if (L$Arrival[i]=="G-first") {
-    Ylast<-mix1$Legumes[which(rownames(mix1)==plot)]+mix1$Forbs[which(rownames(mix1)==plot)]
-    Ysync1<-mix1$Legumes[mix1$Arrival=="Sync" & mix1$Replicate==1]+mix1$Forbs[mix1$Arrival=="Sync" & mix1$Replicate==1]
-    Ysync2<-mix1$Legumes[mix1$Arrival=="Sync" & mix1$Replicate==2]+mix1$Forbs[mix1$Arrival=="Sync" & mix1$Replicate==2]
-    Ysync3<-mix1$Legumes[mix1$Arrival=="Sync" & mix1$Replicate==3]+mix1$Forbs[mix1$Arrival=="Sync" & mix1$Replicate==3]
-    Ysync4<-mix1$Legumes[mix1$Arrival=="Sync" & mix1$Replicate==4]+mix1$Forbs[mix1$Arrival=="Sync" & mix1$Replicate==4]}
-  
-  if (L$Arrival[i]=="L-first") {
-    Ylast<-mix1$Forbs[which(rownames(mix1)==plot)]+mix1$Grasses[which(rownames(mix1)==plot)]
-    Ysync1<-mix1$Forbs[mix1$Arrival=="Sync" & mix1$Replicate==1]+mix1$Grasses[mix1$Arrival=="Sync" & mix1$Replicate==1]
-    Ysync2<-mix1$Forbs[mix1$Arrival=="Sync" & mix1$Replicate==2]+mix1$Grasses[mix1$Arrival=="Sync" & mix1$Replicate==2]
-    Ysync3<-mix1$Forbs[mix1$Arrival=="Sync" & mix1$Replicate==3]+mix1$Grasses[mix1$Arrival=="Sync" & mix1$Replicate==3]
-    Ysync4<-mix1$Forbs[mix1$Arrival=="Sync" & mix1$Replicate==4]+mix1$Grasses[mix1$Arrival=="Sync" & mix1$Replicate==4]}
-  
-  if (L$Arrival[i]!="aSynch"){
-    
-    P1<-2*(Ylast-Ysync1)/(Ysync1+abs(Ylast-Ysync1))
-    P2<-2*(Ylast-Ysync2)/(Ysync2+abs(Ylast-Ysync2))
-    P3<-2*(Ylast-Ysync3)/(Ysync3+abs(Ylast-Ysync3))
-    P4<-2*(Ylast-Ysync4)/(Ysync4+abs(Ylast-Ysync4))
-    
-    L$P[i]<-(P1+P2+P3+P4)/4
-    
-    CI<-CIbootstrap(x=c(P1,P2,P3,P4), n=10000, CI=0.95)
-    L$CIlow[i]<-CI[1]
-    L$CIhigh[i]<-CI[2]}}
+p3<-ggplot(L2014, aes(x=P, y=TICE, fill=Arrival, shape=Arrival))+
+  geom_segment(aes(x=CIlow, y=TICE, xend=CIhigh, yend=TICE), color="gray50")+
+  geom_point(color="black", size=2)+
+  geom_line(aes(x=newx, y=prd), data=model, color="black", size=1, inherit.aes = FALSE)+
+  theme_bw()+
+  facet_wrap(~Year)+
+  scale_y_continuous(breaks=seq(-100,300, by=100), limits=c(-100,300))+
+  geom_vline(xintercept = 0, linetype=3, color="black")+
+  geom_hline(yintercept = 0, linetype=3, color="black")+
+  theme(legend.position="none",
+        panel.grid=element_blank(),
+        axis.text.x=element_text(size=cex.axis,color="black"),
+        axis.text.y=element_text(size=cex.axis,color="black"),
+        axis.title.y=element_text(size=cex.title, margin=margin(t=0,r=7,b=0,l=0)),
+        axis.title.x=element_text(size=cex.title, margin=margin(t=7,r=0,b=0,l=0)),
+        strip.text=element_text(size=12),
+        panel.border = element_rect(color="black"),
+        strip.background=element_rect(color="black"))+
+  scale_fill_manual(name="Arrival", labels=c("F-first", "G-first", "L-first"), 
+                    values=cbPalette)+
+  scale_shape_manual(name="Arrival", labels=c("F-first", "G-first", "L-first"), 
+                     values=c(21,22,24))+
+  xlab("")+
+  ylab("")+
+  geom_text(aes(x=-1, y=290, label="b"), 
+            size=5, fontface="bold", inherit.aes = FALSE)
 
-L<-L[-which(is.na(L$P)==TRUE),]
+model<-data.frame(
+  newx=seq(min(L2014$P),max(L2014$P),by=0.01),
+  prd=modelTDCE$coef$`2014`$`coef(SMA)`[2]*seq(min(L2014$P),max(L2014$P),by=0.01)+modelTDCE$coef$`2014`$`coef(SMA)`[1])
 
-tiff(filename="FigureS3.tif", res=600, compression="lzw", width=12, height=12, units="cm",
-     pointsize=9)
-layout(matrix(1:4, ncol=2, nrow=2, byrow=FALSE))
+p4<-ggplot(L2014, aes(x=P, y=TDCE, fill=Arrival, shape=Arrival))+
+  geom_segment(aes(x=CIlow, y=TDCE, xend=CIhigh, yend=TDCE), color="gray50")+
+  geom_point(color="black", size=2)+
+  geom_line(aes(x=newx, y=prd), data=model, color="black", size=1, inherit.aes = FALSE)+
+  theme_bw()+
+  scale_y_continuous(breaks=seq(-40,40, by=20), limits=c(-40,40))+
+  geom_vline(xintercept = 0, linetype=3, color="black")+
+  geom_hline(yintercept = 0, linetype=3, color="black")+
+  theme(legend.position="none",
+        panel.grid=element_blank(),
+        axis.text.x=element_text(size=cex.axis,color="black"),
+        axis.text.y=element_text(size=cex.axis,color="black"),
+        axis.title.y=element_text(size=cex.title, margin=margin(t=0,r=7,b=0,l=0)),
+        axis.title.x=element_text(size=cex.title, margin=margin(t=7,r=0,b=0,l=0)),
+        strip.text=element_text(size=13),
+        panel.border = element_rect(color="black"),
+        strip.background=element_rect(color="black"))+
+  scale_fill_manual(name="Arrival", labels=c("F-first", "G-first", "L-first"), 
+                    values=cbPalette)+
+  scale_shape_manual(name="Arrival", labels=c("F-first", "G-first", "L-first"), 
+                     values=c(21,22,24))+
+  xlab(expression(paste("Priority effect index (", italic(P), ")", sep="")))+
+  ylab("")+
+  geom_text(aes(x=-1, y=38, label="d"), 
+            size=5, fontface="bold", inherit.aes = FALSE)
 
-par(mar=c(3,4.5,4,1)+0.1)
-plot(L$P,L$TICE, xlab="", ylab=expression(paste("TICE (g ", m^-2, ")")),las=1,
-     type="n", bty="l", ylim=c(-200,500), main="2013", cex.main=1.4, xlim=c(-1,0.75))
-model<-lm(TICE~P, L)
-newx<-seq(min(L$P),max(L$P),by=0.01)
-prd<-predict(model, newdata=data.frame(P=newx),interval = c("confidence"), 
-             level = 0.95, type="response")
-polygon(x=c(newx, rev(newx)), y=c(prd[,2], rev(prd[,3])), 
-        col=adjustcolor(rgb(0,158,115, maxColorValue = 255), alpha.f = 0.2), border=NA)
-box(bty="l")
-abline(v=0, h=0, lty=3)
-segments(x0=L$CIlow, y0=L$TICE, x1=L$CIhigh, y1=L$TICE, col="gray50")
-points(L$P[L$Arrival=="F-first"], L$TICE[L$Arrival=="F-first"], pch=21, col="black", bg=pal[3], cex=1.2)
-points(L$P[L$Arrival=="G-first"], L$TICE[L$Arrival=="G-first"], pch=22, col="black", bg=pal[2], cex=1.2)
-points(L$P[L$Arrival=="L-first"], L$TICE[L$Arrival=="L-first"], pch=24, col="black", bg=pal[1], cex=1.2)
-lines(newx, predict(model, newdata=data.frame(P=newx)), col=rgb(0,158,115, maxColorValue = 255), lwd=2)
-title(main="a", font=2, cex.main=1.4, adj=0, line=1.2)
-cor.test(L$TICE,L$P)
+p5<-ggarrange(p1,p3,p2,p4, nrow=2, ncol=2, heights=c(1.1,1))
 
-par(mar=c(5,4.5,2,1)+0.1)
-plot(L$P,L$TDCE, ylab=expression(paste("TDCE (g ", m^-2, ")")), las=1, xlim=c(-1,0.75),
-     type="n", bty="l", ylim=c(-100,200), xlab=expression(paste("Priority effect index (", italic(P), ")", sep="")))
-model<-lm(TDCE~P, L)
-newx<-seq(min(L$P),max(L$P),by=0.01)
-prd<-predict(model, newdata=data.frame(P=newx),interval = c("confidence"), 
-             level = 0.95, type="response")
-polygon(x=c(newx, rev(newx)), y=c(prd[,2], rev(prd[,3])), 
-        col=adjustcolor(rgb(0,158,115, maxColorValue = 255), alpha.f = 0.2), border=NA)
-box(bty="l")
-abline(v=0, h=0, lty=3)
-segments(x0=L$CIlow, y0=L$TDCE, x1=L$CIhigh, y1=L$TDCE, col="gray50")
-points(L$P[L$Arrival=="F-first"], L$TDCE[L$Arrival=="F-first"], pch=21, col="black", bg=pal[3], cex=1.2)
-points(L$P[L$Arrival=="G-first"], L$TDCE[L$Arrival=="G-first"], pch=22, col="black", bg=pal[2], cex=1.2)
-points(L$P[L$Arrival=="L-first"], L$TDCE[L$Arrival=="L-first"], pch=24, col="black", bg=pal[1], cex=1.2)
-lines(newx, predict(model, newdata=data.frame(P=newx)), col=rgb(0,158,115, maxColorValue = 255), lwd=2)
-title(main="c", font=2, cex.main=1.4, adj=0, line=1.2)
-cor.test(L$TDCE,L$P)
-
-#Calculate P for 2014
-
-mix1<-matrix(ncol=9, nrow=32)
-colnames(mix1)<-unique(mix2014$Art)
-rownames(mix1)<-unique(mix2014$Plot)
-
-for (i in 1:nrow(mix2014)){mix1[mix2014$Plot[i],mix2014$Art[i]]<-mix2014$x[i]}
-mix1[is.na(mix1)==TRUE]<-0
-mix1<-mix1[c(1:4,9:12,17:20,25:28),]
-
-mono1<-matrix(mono2014$SDW, ncol=9, nrow=4, byrow=FALSE)
-colnames(mono1)<-unique(mono2014$Art)
-rownames(mono1)<-c("Mono1", "Mono2", "Mono3", "Mono4")
-
-res2014<-apm(mix=mix1, mono=mono1, method="fox")
-res2014<-as.data.frame(res2014)
-res2014$Arrival<-c(rep("aSynch", 4), rep("F-first", 4), rep("G-first", 4), rep("L-first", 4))
-res2014$CE<-res2014$TDCE+res2014$TICE
-res2014$Year<-rep(2014, nrow(res2014))
-res2014$Plot<-rownames(res2014)
-
-mix1<-as.data.frame(mix1)
-mix1$Forbs<-mix1$Achmil+mix1$Leuvul+mix1$Plalan
-mix1$Grasses<-mix1$Dacglo+mix1$Fespra+mix1$Hollan
-mix1$Legumes<-mix1$Medsat+mix1$Lotcor+mix1$Tripra
-mix1$Arrival<-c(rep("Sync", 4), rep("F-first", 4), rep("G-first", 4), rep("L-first", 4))
-mix1$Replicate<-rep(1:4, 4)
-
-pal<-c("white", "white", "white")
-L<-res2014
-L$Replicate<-rep(1:4, 4)
-L$P<-NA
-L$CIlow<-NA
-L$CIhigh<-NA
-
-for (i in 1:nrow(L)){
-  
-  plot<-rownames(L)[i]
-  
-  if (L$Arrival[i]=="F-first") {
-    Ylast<-mix1$Legumes[which(rownames(mix1)==plot)]+mix1$Grasses[which(rownames(mix1)==plot)]
-    Ysync1<-mix1$Legumes[mix1$Arrival=="Sync" & mix1$Replicate==1]+mix1$Grasses[mix1$Arrival=="Sync" & mix1$Replicate==1]
-    Ysync2<-mix1$Legumes[mix1$Arrival=="Sync" & mix1$Replicate==2]+mix1$Grasses[mix1$Arrival=="Sync" & mix1$Replicate==2]
-    Ysync3<-mix1$Legumes[mix1$Arrival=="Sync" & mix1$Replicate==3]+mix1$Grasses[mix1$Arrival=="Sync" & mix1$Replicate==3]
-    Ysync4<-mix1$Legumes[mix1$Arrival=="Sync" & mix1$Replicate==4]+mix1$Grasses[mix1$Arrival=="Sync" & mix1$Replicate==4]}
-  
-  if (L$Arrival[i]=="G-first") {
-    Ylast<-mix1$Legumes[which(rownames(mix1)==plot)]+mix1$Forbs[which(rownames(mix1)==plot)]
-    Ysync1<-mix1$Legumes[mix1$Arrival=="Sync" & mix1$Replicate==1]+mix1$Forbs[mix1$Arrival=="Sync" & mix1$Replicate==1]
-    Ysync2<-mix1$Legumes[mix1$Arrival=="Sync" & mix1$Replicate==2]+mix1$Forbs[mix1$Arrival=="Sync" & mix1$Replicate==2]
-    Ysync3<-mix1$Legumes[mix1$Arrival=="Sync" & mix1$Replicate==3]+mix1$Forbs[mix1$Arrival=="Sync" & mix1$Replicate==3]
-    Ysync4<-mix1$Legumes[mix1$Arrival=="Sync" & mix1$Replicate==4]+mix1$Forbs[mix1$Arrival=="Sync" & mix1$Replicate==4]}
-  
-  if (L$Arrival[i]=="L-first") {
-    Ylast<-mix1$Forbs[which(rownames(mix1)==plot)]+mix1$Grasses[which(rownames(mix1)==plot)]
-    Ysync1<-mix1$Forbs[mix1$Arrival=="Sync" & mix1$Replicate==1]+mix1$Grasses[mix1$Arrival=="Sync" & mix1$Replicate==1]
-    Ysync2<-mix1$Forbs[mix1$Arrival=="Sync" & mix1$Replicate==2]+mix1$Grasses[mix1$Arrival=="Sync" & mix1$Replicate==2]
-    Ysync3<-mix1$Forbs[mix1$Arrival=="Sync" & mix1$Replicate==3]+mix1$Grasses[mix1$Arrival=="Sync" & mix1$Replicate==3]
-    Ysync4<-mix1$Forbs[mix1$Arrival=="Sync" & mix1$Replicate==4]+mix1$Grasses[mix1$Arrival=="Sync" & mix1$Replicate==4]}
-  
-  if (L$Arrival[i]!="aSynch"){
-    
-    P1<-2*(Ylast-Ysync1)/(Ysync1+abs(Ylast-Ysync1))
-    P2<-2*(Ylast-Ysync2)/(Ysync2+abs(Ylast-Ysync2))
-    P3<-2*(Ylast-Ysync3)/(Ysync3+abs(Ylast-Ysync3))
-    P4<-2*(Ylast-Ysync4)/(Ysync4+abs(Ylast-Ysync4))
-    
-    L$P[i]<-(P1+P2+P3+P4)/4
-    
-    CI<-CIbootstrap(x=c(P1,P2,P3,P4), n=10000, CI=0.95)
-    L$CIlow[i]<-CI[1]
-    L$CIhigh[i]<-CI[2]}}
-
-L<-L[-which(is.na(L$P)==TRUE),]
-
-par(mar=c(3,3.5,4,2)+0.1)
-plot(L$P,L$TICE, xlab="", ylab="",las=1,
-     type="n", bty="l", ylim=c(-150,300), main="2014", cex.main=1.4, xlim=c(-1,1.25))
-model<-lm(TICE~P, L)
-newx<-seq(min(L$P),max(L$P),by=0.01)
-prd<-predict(model, newdata=data.frame(P=newx),interval = c("confidence"), 
-             level = 0.95, type="response")
-polygon(x=c(newx, rev(newx)), y=c(prd[,2], rev(prd[,3])), 
-        col=adjustcolor(rgb(0,158,115, maxColorValue = 255), alpha.f = 0.2), border=NA)
-box(bty="l")
-abline(v=0, h=0, lty=3)
-segments(x0=L$CIlow, y0=L$TICE, x1=L$CIhigh, y1=L$TICE, col="gray50")
-points(L$P[L$Arrival=="F-first"], L$TICE[L$Arrival=="F-first"], pch=21, col="black", bg=pal[3], cex=1.2)
-points(L$P[L$Arrival=="G-first"], L$TICE[L$Arrival=="G-first"], pch=22, col="black", bg=pal[2], cex=1.2)
-points(L$P[L$Arrival=="L-first"], L$TICE[L$Arrival=="L-first"], pch=24, col="black", bg=pal[1], cex=1.2)
-lines(newx, predict(model, newdata=data.frame(P=newx)), col=rgb(0,158,115, maxColorValue = 255), lwd=2)
-title(main="b", font=2, cex.main=1.4, adj=0, line=1.2)
-legend("topleft", legend=c("F-first", "G-first", "L-first"), pch=c(21,22,24), 
-       pt.bg=c(pal[3], pal[2], pal[1]), col="black", cex=1, pt.cex=1.1, border=NA, bty="n")
-cor.test(L$TICE,L$P)
-
-par(mar=c(5,3.5,2,2)+0.1)
-plot(L$P,L$TDCE, ylab="",las=1, xlim=c(-1,1.25),
-     type="n", bty="l", ylim=c(-50,50), xlab=expression(paste("Priority effect index (", italic(P), ")", sep="")))
-model<-lm(TDCE~P, L)
-newx<-seq(min(L$P),max(L$P),by=0.01)
-prd<-predict(model, newdata=data.frame(P=newx),interval = c("confidence"), 
-             level = 0.95, type="response")
-polygon(x=c(newx, rev(newx)), y=c(prd[,2], rev(prd[,3])), 
-        col=adjustcolor(rgb(0,158,115, maxColorValue = 255), alpha.f = 0.2), border=NA)
-box(bty="l")
-abline(v=0, h=0, lty=3)
-segments(x0=L$CIlow, y0=L$TDCE, x1=L$CIhigh, y1=L$TDCE, col="gray50")
-points(L$P[L$Arrival=="F-first"], L$TDCE[L$Arrival=="F-first"], pch=21, col="black", bg=pal[3], cex=1.2)
-points(L$P[L$Arrival=="G-first"], L$TDCE[L$Arrival=="G-first"], pch=22, col="black", bg=pal[2], cex=1.2)
-points(L$P[L$Arrival=="L-first"], L$TDCE[L$Arrival=="L-first"], pch=24, col="black", bg=pal[1], cex=1.2)
-lines(newx, predict(model, newdata=data.frame(P=newx)), col=rgb(0,158,115, maxColorValue = 255), lwd=2)
-title(main="d", font=2, cex.main=1.4, adj=0, line=1.2)
-cor.test(L$TDCE,L$P)
-
-dev.off()
+ggsave("FigureS4.tiff", plot=p5, dpi=600, compression="lzw", 
+       width=16, height=13.5, units="cm", pointsize=8)
